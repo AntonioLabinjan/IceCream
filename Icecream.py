@@ -3,15 +3,16 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "Icecream27"  # You can insert any secret key here
+app.secret_key = "Icecream2" # možemo napisati doslovno bilo koji secret key; bitno da ga imamo
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:AN1246A301JA@localhost/Icecream'  # Insert your SQL password
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:AN1246A301JA@localhost/Icecream' # OVDJE UNOSITE SVOJU MYSQL ŠIFRU
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# KLASE
 class IceCream(db.Model):
-    icecream_id = db.Column(db.Integer, primary_key=True)
+    icecream_id = db.Column(db.Integer, primary_key = True)
     icecream_name = db.Column(db.String(100))
     icecream_price = db.Column(db.Float)
 
@@ -20,11 +21,11 @@ class IceCream(db.Model):
         self.icecream_name = icecream_name
         self.icecream_price = icecream_price
 
-
+# RUTE
 @app.route('/')
 def Index():
     all_icecreams = IceCream.query.all()
-    return render_template("index.html", icecreams=all_icecreams) # ne želi nać template
+    return render_template("index.html", icecreams=all_icecreams)
 
 @app.route('/insert_icecream', methods=['POST'])
 def insert_icecream():
@@ -40,7 +41,7 @@ def insert_icecream():
         flash("ICE CREAM HAS BEEN INSERTED SUCCESSFULLY AT: " + datetime.now().strftime("%H:%M"))
 
         return redirect(url_for('Index'))
-
+    
 @app.route('/update_icecream', methods=['GET', 'POST'])
 def update_icecream():
     if request.method == 'POST':
@@ -53,15 +54,48 @@ def update_icecream():
         flash("ICE CREAM HAS BEEN UPDATED SUCCESSFULLY AT: " + datetime.now().strftime("%H:%M"))
 
         return redirect(url_for('Index'))
-
-@app.route('/delete_icecream/<icecream_id>/', methods=['GET', 'POST'])
+    
+@app.route('/delete_icecream/<int:icecream_id>/', methods=['GET', 'POST'])
 def delete_icecream(icecream_id):
     my_icecream = IceCream.query.get(icecream_id)
-    db.session.delete(my_icecream)
-    db.session.commit()
-    flash("ICE CREAM HAS BEEN DELETED SUCCESSFULLY AT: " + datetime.now().strftime("%H:%M"))
+
+    if my_icecream is not None:
+        db.session.delete(my_icecream)
+        db.session.commit()
+        flash("ICE CREAM HAS BEEN DELETED SUCCESSFULLY AT: " + datetime.now().strftime("%H:%M"))
+    else:
+        flash("Ice cream not found with ID: " + str(icecream_id))
 
     return redirect(url_for('Index'))
 
+@app.route('/total_icecream_price')
+def total_icecream_price():
+    all_icecreams = IceCream.query.all()
+    total_price = sum(icecream.icecream_price for icecream in all_icecreams)
+    flash(f"Total Ice Cream Price: €{total_price:.2f}", "total_price")
+    return redirect(url_for('Index'))
+
+@app.route('/average_icecream_price')
+def average_icecream_price():
+    all_icecreams = IceCream.query.all()
+    
+    if not all_icecreams:
+        flash("No ice creams found.", "average_price")
+        return redirect(url_for('Index'))
+    
+    total_price = sum(icecream.icecream_price for icecream in all_icecreams)
+    average_price = total_price / len(all_icecreams)
+    
+    flash(f"Average Ice Cream Price: €{average_price:.2f}", "average_price")
+    return redirect(url_for('Index'))
+
+@app.route('/total_icecream_count')
+def total_icecream_count():
+    total_count = IceCream.query.count()
+    flash(f"Total Ice Cream Count: {total_count}", "total_count")
+    return redirect(url_for('Index'))
+
+
 if (__name__ == "__main__"):
     app.run(debug=True)
+
